@@ -12,6 +12,18 @@ $(function() {
 	var selected = null;
 		
 	function initJoints(n) {
+		if(joints.length > 0) {
+			for(var i=0; i<joints.length; i++) {
+				joints[i].remove();
+			}
+			joints=[];
+			selected = null;
+		}
+		
+		if(n > 3) {
+			jointW = Math.floor((baseY-10) / n);
+		}
+		
 		for(var i=0; i<n; i++) {
 			var j = paper.rect(
 				baseX,
@@ -30,8 +42,10 @@ $(function() {
 			
 			joints.push(j);
 		}
+		
+		updatePoses();
 	}
-	initJoints(3);
+	initJoints(5);
 	
 	function updatePoses() {
 		var totalRotation = 0;
@@ -60,48 +74,74 @@ $(function() {
 			joint.rotate(jointRotation, prevX, prevY + 5);
 		}
 	}
-	updatePoses();
 	
 	function handleClick(e) {
 		var index    = this.data("index");
 		var rotation = this.data("rotation");
 		
+		function selectOnly(index) {
+			for(var i=0; i<joints.length; i++) {
+				if(i === index) {
+					joints[i].attr("fill", "#000");
+				} else {
+					joints[i].attr("fill", "#fff");
+				}
+			}
+		}
+		
+		
 		if(selected === index) {
 			// already selected, deselect
 			
 			selected = null;
-
-			this.attr({ fill: "#000" });
+			
+			joints[selected].attr("fill", "#fff");
 		} else {
 			// make selected
 			
 			selected = index;
-
-			this.attr({ fill: "#000" });
+			
+			selectOnly(index);
 		}
 	}
-	
+		
 	$(document).keydown(function(e) {
-		if(typeof selected !== "undefined") {
-			var r;
-			if(e.which === 37) {
-				r = -5;
-			} else if (e.which === 39) {
-				r = 5;
-			} else {
-				return;
+		if(e.which === 37 || e.which === 39) {
+			if(typeof selected !== "undefined") {
+				var r;
+				if(e.which === 37) {
+					// LEFT ARROW
+					r = -5;
+				} else if (e.which === 39) {
+					// RIGHT ARROW
+					r = 5;
+				}
+				
+				var el = joints[selected];
+				var rotation = parseFloat(el.data("rotation"));
+	
+				var x = el.attr("x");
+				var y = el.attr("y");
+	
+				el.rotate(r, x, y + jointH/2);
+				el.data("rotation", rotation + r);
+	
+				updatePoses();
 			}
-			
-			var el = joints[selected];
-			var rotation = parseFloat(el.data("rotation"));
+		} else if(e.which === 38 || e.which === 40) {
+			if(e.which === 38) {
+				// UP ARROW
+				
+				if(joints.length < 10) {
+					initJoints(joints.length+1);
+				}
+			} else if(e.which === 40) {
+				// DOWN ARROW
 
-			var x = el.attr("x");
-			var y = el.attr("y");
-
-			el.rotate(r, x, y + jointH/2);
-			el.data("rotation", rotation + r);
-
-			updatePoses();
+				if(joints.length > 1) {
+					initJoints(joints.length-1);
+				}
+			}
 		}
 	});
 });
