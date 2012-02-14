@@ -1,0 +1,3 @@
+An exercise in implementing a forward and inverse kinematics simulation in Javascript. Uses the [Raphael](http://raphaeljs.com/) SVG framework.
+
+All code is MIT licensed unless otherwise noted.
