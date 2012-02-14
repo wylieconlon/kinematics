@@ -10,17 +10,7 @@ $(function() {
 	
 	var joints = [];
 	var selected = null;
-	
-	var temp = paper.rect(50, 50, 100, 10);
-
-	var temp2 = paper.rect(50, 50, 100, 10);
-	temp2.rotate(-5);
-	temp2.attr("x", 100);
-
-	var temp2 = paper.rect(50, 50, 100, 10);
-	temp2.rotate(-30, 100, 55);
-	temp2.translate(50, 0);
-	
+		
 	function initJoints(n) {
 		for(var i=0; i<n; i++) {
 			var j = paper.rect(
@@ -46,39 +36,29 @@ $(function() {
 	function updatePoses() {
 		var totalRotation = 0;
 		
-// 		if(joints.length > 0) {
-// 			totalRotation = parseFloat(joints[0].data("rotation")) * Math.PI/180;
-// 		}
-		
 		for(var i=1; i<joints.length; i++) {
 			var joint = joints[i];
 			
 			var prevX = joints[i-1].attr("x");
 			var prevY = joints[i-1].attr("y");
-			console.log("prevY", prevY);
 			var prevR = joints[i-1].data("rotation");
 			
 			var currentR = joints[i].data("rotation");
 			
-			//console.log("joint "+i, currentR);
-			totalRotation += (parseFloat(prevR)) * Math.PI/180;
+			totalRotation += parseFloat(prevR) * Math.PI/180;
 			
-			prevX += jointW * Math.cos(totalRotation);
-			prevY += jointW * Math.sin(totalRotation);
-// 			prevX += jointW * Math.cos(prevR * Math.PI/180);
-// 			prevY += jointW * Math.sin(prevR * Math.PI/180);
-			
-			console.log(prevX-baseX, prevY-baseY);
-			
-			joint.rotate(- parseFloat(currentR) * Math.PI/180);
+			prevX += (jointW) * Math.cos(totalRotation);
+			prevY += (jointW) * Math.sin(totalRotation);
 			
 			joint.attr("x", prevX);
 			joint.attr("y", prevY);
-
-			joint.rotate(parseFloat(currentR) * Math.PI/180);
+			
+			var jointRotation = totalRotation * 180/Math.PI + currentR;
+			
+			joint.transform("");
+			
+			joint.rotate(jointRotation, prevX, prevY + 5);
 		}
-		
-		console.log(totalRotation * 180/Math.PI);
 	}
 	updatePoses();
 	
@@ -101,19 +81,6 @@ $(function() {
 		}
 	}
 	
-	function rotateAllFromIndex(index, amount) {
-		for(index; index<joints.length; index++) {
-			var el = joints[index];
-			var rotation = parseFloat(el.data("rotation"));
-			
-			var x = el.attr("x");
-			var y = el.attr("y");
-			
-			el.rotate(amount/*, x, y + jointH/2*/);
-			//el.data("rotation", rotation + amount);
-		}
-	}
-	
 	$(document).keydown(function(e) {
 		if(typeof selected !== "undefined") {
 			var r;
@@ -125,28 +92,15 @@ $(function() {
 				return;
 			}
 			
-			rotateAllFromIndex(selected, r);
-			
-			
 			var el = joints[selected];
-			var rotation = parseInt(el.data("rotation"));
+			var rotation = parseFloat(el.data("rotation"));
 
 			var x = el.attr("x");
 			var y = el.attr("y");
 
-			//el.rotate(r, x, y + jointH/2);
+			el.rotate(r, x, y + jointH/2);
 			el.data("rotation", rotation + r);
-// 			
-// 			
-// 			
-// 			if(e.which === 37) {
-// 				el.rotate(-5, x, y + jointH/2);
-// 				el.data("rotation", rotation-5);
-// 			} else if(e.which === 39) {
-// 				el.rotate(5, x, y + jointH/2);
-// 				el.data("rotation", rotation+5);
-// 			}
-			
+
 			updatePoses();
 		}
 	});
