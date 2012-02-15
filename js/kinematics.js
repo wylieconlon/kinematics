@@ -4,13 +4,15 @@ $(function() {
 		baseX = w/2,
 		baseY = h/2,
 		jointW = 80,
-		jointH = 10;
+		jointH = 10,
+		offsetLeft,
+		offsetTop;
 	
 	var paper = Raphael("main", w, h);
 	
 	var joints = [];
 	var selected = null;
-		
+	
 	function initJoints(n) {
 		if(joints.length > 0) {
 			for(var i=0; i<joints.length; i++) {
@@ -38,16 +40,20 @@ $(function() {
 			j.data("index", i);
 			j.data("rotation", 0);
 			
-			j.click(handleClick);
+			j.click(handleJointClick);
+			j.drag(handleDrag);
 			
 			joints.push(j);
 		}
 		
-		updatePoses();
+		updatePosesForward();
 	}
 	initJoints(5);
 	
-	function updatePoses() {
+	/* Forward kinematics
+	=========================================================================*/
+	
+	function updatePosesForward() {
 		var totalRotation = 0;
 		
 		for(var i=1; i<joints.length; i++) {
@@ -75,7 +81,7 @@ $(function() {
 		}
 	}
 	
-	function handleClick(e) {
+	function handleJointClick(e) {
 		var index    = this.data("index");
 		var rotation = this.data("rotation");
 		
@@ -90,21 +96,15 @@ $(function() {
 		}
 		
 		
-		if(selected === index) {
-			// already selected, deselect
-			
-			selected = null;
-			
-			joints[selected].attr("fill", "#fff");
-		} else {
-			// make selected
+		if(selected !== index) {
+			// make new selection
 			
 			selected = index;
 			
 			selectOnly(index);
 		}
 	}
-		
+	
 	$(document).keydown(function(e) {
 		if(e.which === 37 || e.which === 39) {
 			if(typeof selected !== "undefined") {
@@ -126,7 +126,7 @@ $(function() {
 				el.rotate(r, x, y + jointH/2);
 				el.data("rotation", rotation + r);
 	
-				updatePoses();
+				updatePosesForward();
 			}
 		} else if(e.which === 38 || e.which === 40) {
 			if(e.which === 38) {
@@ -144,4 +144,109 @@ $(function() {
 			}
 		}
 	});
+
+	/* Inverse kinematics
+	=========================================================================*/
+	
+    var getCursorPosition = function(e) {
+        if(offsetLeft == undefined) {
+            offsetLeft = 0;
+            for(var node=$("#main svg")[0]; node; node = node.offsetParent) {
+                offsetLeft += node.offsetLeft;
+            }
+        }
+        if(offsetTop == undefined) {
+            offsetTop = 0;
+            for(var node=$("#main svg")[0]; node; node = node.offsetParent) {
+                offsetTop += node.offsetTop;
+            }
+        }
+        
+        var x = e.pageX - offsetLeft;
+        var y = e.pageY - offsetTop;
+    
+        return { x: x, y: y };
+    }
+    
+    function makeJacobian() {
+    	var jacobian_array = [];
+		
+    	for(var i=0; i<joints.length; i++) {
+    		var el = joints[i];
+    		
+    		var x = el.attr("x");
+    		var y = el.attr("y");
+    		var r = el.data("rotation") * Math.PI/180;
+    		
+			var v_sub_j = $V([x, y, 1]).toUnitVector();
+			
+			var s_sub_i = $V([jointW * Math.cos(r),
+							  jointW * Math.sin(r),
+							  0]);
+			
+			/*var s_sub_i = $V([x + jointW * Math.cos(r),
+							  y + jointW * Math.sin(r),
+							  1]);
+			*/
+			
+			//var p_sub_j = $V([el.attr("x"), el.attr("y")]);
+			
+			//console.log(v_sub_j.inspect(), s_sub_i.inspect());
+			
+			var entry = v_sub_j.cross(s_sub_i);
+			
+			jacobian_array.push([entry.e(1), entry.e(2)]);
+		}
+		
+		return $M(jacobian_array);
+    }
+    
+    function makeErrorVector(tx, ty) {
+    	var error_array = [];
+		
+		for(var i=0; i<joints.length; i++) {
+			error_array.push([0, 0]);
+		}
+    	    		
+		var el = joints[joints.length-1];
+		
+		var x = el.attr("x");
+		var y = el.attr("y");
+		var r = el.data("rotation") * Math.PI/180;
+		
+		error_array[joints.length-1] = [tx-x, ty-y];
+		
+		console.log(error_array);
+		
+		return $M(error_array);
+	}
+    
+    function handleDrag(dx, dy, x, y, e) {
+		var index    = this.data("index");
+		var rotation = this.data("rotation");
+		var rads = rotation * Math.PI/180;
+		
+		var c = getCursorPosition(e);
+		
+		//paper.circle(c.x, c.y, 10);
+		
+		//console.log("Joint "+index, e, getCursorPosition(e));
+		
+		var endX = this.attr("x") + jointW * Math.cos(rads);
+		var endY = this.attr("y") + jointW * Math.sin(rads) + jointH/2;
+
+		//paper.rect(endX, endY, 5, 5);
+		
+		var jacobian = makeJacobian();
+		var errors = makeErrorVector(c.x, c.y);
+		
+		console.log(jacobian.inspect());
+		console.log(errors.inspect());
+		
+		//var alpha = errors.dot(jacobian.x(jacobian.transpose().multiply(errors.transpose())));
+		
+		var dtheta = jacobian.transpose().x(errors);
+		
+		console.log(dtheta.inspect());
+	}
 });

@@ -1844,7 +1844,7 @@
         matrixproto.offset = function () {
             return [this.e.toFixed(4), this.f.toFixed(4)];
         };
-        
+
         function norm(a) {
             return a[0] * a[0] + a[1] * a[1];
         }
