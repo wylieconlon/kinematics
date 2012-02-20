@@ -1,5 +1,5 @@
 $(function() {
-	var w = 940,
+	var w = 600,
 		h = 600,
 		baseX = w/2,
 		baseY = h/2,
@@ -12,6 +12,8 @@ $(function() {
 	
 	var joints = [];
 	var selected = null;
+	
+	var mousedown = false;
 	
 	function initJoints(n) {
 		if(joints.length > 0) {
@@ -35,13 +37,16 @@ $(function() {
 				jointH/2
 			);
 			
-			j.attr({ fill: "#fff" });
+			j.attr({
+				fill: "#9cf",
+				stroke: "#38f",
+				cursor: "pointer"
+			});
 
 			j.data("index", i);
 			j.data("rotation", 0);
 			
 			j.click(handleJointClick);
-			j.drag(handleDrag);
 			
 			joints.push(j);
 		}
@@ -56,51 +61,50 @@ $(function() {
 	function updatePosesForward() {
 		var totalRotation = 0;
 		
-		for(var i=1; i<joints.length; i++) {
+		for(var i=0; i<joints.length; i++) {
 			var joint = joints[i];
 			
-			var prevX = joints[i-1].attr("x");
-			var prevY = joints[i-1].attr("y");
-			var prevR = joints[i-1].data("rotation");
+			if(i>0) {
+				var prevX = joints[i-1].attr("x"),
+					prevY = joints[i-1].attr("y");
+			} else {
+				var prevX = baseX - jointW,
+					prevY = baseY;
+			}
 			
-			var currentR = joints[i].data("rotation");
-			
-			totalRotation += parseFloat(prevR) * Math.PI/180;
-			
-			prevX += (jointW) * Math.cos(totalRotation);
-			prevY += (jointW) * Math.sin(totalRotation);
-			
-			joint.attr("x", prevX);
-			joint.attr("y", prevY);
-			
-			var jointRotation = totalRotation * 180/Math.PI + currentR;
+			prevX += jointW * Math.cos(totalRotation);
+			prevY += jointW * Math.sin(totalRotation);
 			
 			joint.transform("");
+			joint.attr({
+				x: prevX,
+				y: prevY
+			});
+
+			totalRotation += joints[i].data("rotation") * Math.PI/180;
 			
-			joint.rotate(jointRotation, prevX, prevY + 5);
+			joint.rotate(totalRotation * 180/Math.PI, prevX, prevY + jointH/2);
+		}
+	}
+
+	function selectOnly(index) {
+		for(var i=0; i<joints.length; i++) {
+			if(i === index) {
+				joints[i].attr("fill", "#38f");
+			} else {
+				joints[i].attr("fill", "#9cf");
+			}
 		}
 	}
 	
 	function handleJointClick(e) {
-		var index    = this.data("index");
+		var index	= this.data("index");
 		var rotation = this.data("rotation");
-		
-		function selectOnly(index) {
-			for(var i=0; i<joints.length; i++) {
-				if(i === index) {
-					joints[i].attr("fill", "#000");
-				} else {
-					joints[i].attr("fill", "#fff");
-				}
-			}
-		}
-		
 		
 		if(selected !== index) {
 			// make new selection
 			
-			selected = index;
-			
+			selected = index;			
 			selectOnly(index);
 		}
 	}
@@ -148,105 +152,115 @@ $(function() {
 	/* Inverse kinematics
 	=========================================================================*/
 	
-    var getCursorPosition = function(e) {
-        if(offsetLeft == undefined) {
-            offsetLeft = 0;
-            for(var node=$("#main svg")[0]; node; node = node.offsetParent) {
-                offsetLeft += node.offsetLeft;
-            }
-        }
-        if(offsetTop == undefined) {
-            offsetTop = 0;
-            for(var node=$("#main svg")[0]; node; node = node.offsetParent) {
-                offsetTop += node.offsetTop;
-            }
-        }
-        
-        var x = e.pageX - offsetLeft;
-        var y = e.pageY - offsetTop;
-    
-        return { x: x, y: y };
-    }
-    
-    function makeJacobian() {
-    	var jacobian_array = [];
-		
-    	for(var i=0; i<joints.length; i++) {
-    		var el = joints[i];
-    		
-    		var x = el.attr("x");
-    		var y = el.attr("y");
-    		var r = el.data("rotation") * Math.PI/180;
-    		
-			var v_sub_j = $V([x, y, 1]).toUnitVector();
-			
-			var s_sub_i = $V([jointW * Math.cos(r),
-							  jointW * Math.sin(r),
-							  0]);
-			
-			/*var s_sub_i = $V([x + jointW * Math.cos(r),
-							  y + jointW * Math.sin(r),
-							  1]);
-			*/
-			
-			//var p_sub_j = $V([el.attr("x"), el.attr("y")]);
-			
-			//console.log(v_sub_j.inspect(), s_sub_i.inspect());
-			
-			var entry = v_sub_j.cross(s_sub_i);
-			
-			jacobian_array.push([entry.e(1), entry.e(2)]);
+	var getCursorPosition = function(e) {
+		if(offsetLeft == undefined) {
+			offsetLeft = 0;
+			for(var node=$("#main svg")[0]; node; node = node.offsetParent) {
+				offsetLeft += node.offsetLeft;
+			}
+		}
+		if(offsetTop == undefined) {
+			offsetTop = 0;
+			for(var node=$("#main svg")[0]; node; node = node.offsetParent) {
+				offsetTop += node.offsetTop;
+			}
 		}
 		
-		return $M(jacobian_array);
-    }
-    
-    function makeErrorVector(tx, ty) {
-    	var error_array = [];
+		var x = e.pageX - offsetLeft;
+		var y = e.pageY - offsetTop;
+	
+		return { x: x, y: y };
+	}
+	
+	function makeJacobian(tx/*, ty*/) {
+		var dx = [],
+			dy = [],
+			jacobian = [];
+		
+		// get position info about end effector (last joint)
+		var totalR = 0;
+		for(var i=0; i<joints.length; i++) {
+			totalR += joints[i].data("rotation") * Math.PI/180;
+		}
+		var endEl = joints[joints.length-1];
+			endX  = endEl.attr("x") + jointW * Math.cos(totalR),
+			endY  = endEl.attr("y") + jointW * Math.sin(totalR) + jointH/2;
 		
 		for(var i=0; i<joints.length; i++) {
-			error_array.push([0, 0]);
+			var el  = joints[i],
+				elX = el.attr("x"),
+				elY = el.attr("y"),
+				r   = el.data("rotation") * Math.PI/180;
+			
+			var rotationAxis  = $V([0, 0, 1]),
+				jointPosition = $V([endX - elX,
+							 		endY - elY,
+							  		0]);
+			
+			var entry = rotationAxis.cross(jointPosition);
+			
+			dx[i] = entry.e(1);
+			dy[i] = entry.e(2);
 		}
-    	    		
-		var el = joints[joints.length-1];
 		
-		var x = el.attr("x");
-		var y = el.attr("y");
-		var r = el.data("rotation") * Math.PI/180;
+		jacobian.push(dx);
+		jacobian.push(dy);
 		
-		error_array[joints.length-1] = [tx-x, ty-y];
-		
-		console.log(error_array);
-		
-		return $M(error_array);
+		return $M(jacobian);
 	}
-    
-    function handleDrag(dx, dy, x, y, e) {
-		var index    = this.data("index");
-		var rotation = this.data("rotation");
-		var rads = rotation * Math.PI/180;
+	
+	// binding toggle functions to document gives smoother results
+	$(document).mousedown(function() {
+		mousedown = true;
+	});
+	$(document).mouseup(function() {
+		mousedown = false;
+	});
+	$("#main").mousedown(updatePosesInverse);
+	$("#main").mousemove(function(evt) {
+		if(mousedown) {
+			// user is dragging mouse through stage
+			updatePosesInverse(evt);
+		}
+	});
+	
+	function updatePosesInverse(evt) {
+		var c = getCursorPosition(evt),
+			x = c.x,
+			y = c.y;
 		
-		var c = getCursorPosition(e);
+		// get position info about end effector (last joint)
+		var totalR = 0;
+		for(var i=0; i<joints.length; i++) {
+			totalR += joints[i].data("rotation") * Math.PI/180;
+		}
 		
-		//paper.circle(c.x, c.y, 10);
+		var el   = joints[joints.length-1];
+			endX = el.attr("x") + jointW * Math.cos(totalR),
+			endY = el.attr("y") + jointW * Math.sin(totalR) + jointH/2;
 		
-		//console.log("Joint "+index, e, getCursorPosition(e));
+		// calculate jacobian and error vector
+		var jacobian = makeJacobian(x, y),
+			e        = $V([endX - x, endY - y]);
 		
-		var endX = this.attr("x") + jointW * Math.cos(rads);
-		var endY = this.attr("y") + jointW * Math.sin(rads) + jointH/2;
-
-		//paper.rect(endX, endY, 5, 5);
+		// clamping function on error vector
+		if(Math.sqrt(Math.pow(endX - x, 2) +
+					 Math.pow(endY - y, 2)) > jointW/2) {
+			e = e.toUnitVector().x(jointW/2);
+		}
 		
-		var jacobian = makeJacobian();
-		var errors = makeErrorVector(c.x, c.y);
+		// use jacobian and error vector to calculate change in angles
+		var jje   = jacobian.x(jacobian.transpose().x(e)),
+			alpha = e.dot(jje) / jje.dot(jje),
+			d     = jacobian.transpose().x(e).x(alpha);
 		
-		console.log(jacobian.inspect());
-		console.log(errors.inspect());
+		for(var i=0; i<joints.length; i++) {
+			var r = joints[i].data("rotation");
+			
+			joints[i].data("rotation", r - (d.e(i+1) * 180/Math.PI));
+		}
 		
-		//var alpha = errors.dot(jacobian.x(jacobian.transpose().multiply(errors.transpose())));
-		
-		var dtheta = jacobian.transpose().x(errors);
-		
-		console.log(dtheta.inspect());
+		selectOnly();
+		updatePosesForward();
 	}
 });

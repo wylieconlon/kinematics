@@ -4,7 +4,7 @@ body {
 }
 
 #container {
-	width: 940px;
+	width: 600px;
 	margin: auto;
 }
 
@@ -21,8 +21,13 @@ p {
 	margin-bottom: 1em;
 }
 
+strong {
+	font-weight: bold;
+}
+
 #main {
 	background: #fff;
+	border: 1px solid #ccc;
 	margin-bottom: 1em;
 }
 

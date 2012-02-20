@@ -16,13 +16,11 @@ and visit [localhost:8000](http://localhost:8000)
 
 Click on a joint, then use the left and right arrow keys to rotate.
 
-Up and down arrow keys add/subtract joints
+Up and down arrow keys add/subtract joints.
 
 ### Inverse kinematics:
 
-**Not implemented yet.**
-
-This will let you drag a joint to position it.
+Click and drag anywhere on the board to orient the joints.
 
 License
 -------
