@@ -20,7 +20,7 @@ Up and down arrow keys add/subtract joints.
 
 ### Inverse kinematics:
 
-Click and drag anywhere on the board to orient the joints.
+Click and drag anywhere on the board to orient the joints. Implemented using clamped Jacobian transpose method.
 
 License
 -------
