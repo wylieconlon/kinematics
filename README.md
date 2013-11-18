@@ -6,7 +6,7 @@ An exercise in implementing a forward and inverse kinematics simulation in Javas
 Usage
 -----
 
-This script can be demoed at [kinematics.wylieconlon.com](http://kinematics.wylieconlon.com). Alternatively, to run it locally, you may use Python's built in `SimpleHTTPServer` module like so:
+This script can be demoed at [kinematics.wylie.su](http://kinematics.wylie.su). Alternatively, to run it locally, you may use Python's built in `SimpleHTTPServer` module like so:
 
 `python -m SimpleHTTPServer 8000`
 
