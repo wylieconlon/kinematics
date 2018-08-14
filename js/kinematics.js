@@ -156,13 +156,13 @@ $(function() {
 		if(offsetLeft == undefined) {
 			offsetLeft = 0;
 			for(var node=$("#main svg")[0]; node; node = node.offsetParent) {
-				offsetLeft += node.offsetLeft;
+				offsetLeft += $(node).offset().left;
 			}
 		}
 		if(offsetTop == undefined) {
 			offsetTop = 0;
 			for(var node=$("#main svg")[0]; node; node = node.offsetParent) {
-				offsetTop += node.offsetTop;
+				offsetTop += $(node).offset().top;
 			}
 		}
 		

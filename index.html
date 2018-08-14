@@ -1,8 +1,5 @@
 <!doctype html>
-<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en"> <![endif]-->
-<!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en"> <![endif]-->
-<!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en"> <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en"> <!--<![endif]-->
+<html class="no-js" lang="en">
 <head>
   <meta charset="utf-8">
 
@@ -20,27 +17,29 @@
 
   <div id="container">
     <header>
-	<h1>Forward & Inverse Kinematics</h1>
+      <h1>Forward & Inverse Kinematics</h1>
     </header>
     
     <div id="main" role="main"></div>
     
     <footer>
-    <p>Up and down arrow keys change the number of joints.</p>
+      <p>Up and down arrow keys change the number of joints.</p>
 
-    <p><strong>Forward Kinematics:</strong></p>
-    <p>Click a joint to select it. Left and right arrow keys rotate.</p>
-	
-	<p><strong>Inverse Kinematics:</strong></p>
-	<p>Click and drag anywhere on the board to orient the joints.</p>
-    
-    <p><a href="https://github.com/wylieconlon/kinematics">Source code</a></p>
+      <p><strong>Forward Kinematics:</strong></p>
+      <p>Click a joint to select it. Left and right arrow keys rotate.</p>
+
+      <p><strong>Inverse Kinematics:</strong></p>
+      <p>Click and drag anywhere on the board to orient the joints.</p>
+
+      <p><a href="https://github.com/wylieconlon/kinematics">Source code</a></p>
     </footer>
   </div>
 
-
-  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
-  <script defer src="js/raphael-min.js"></script>
+  <script
+    src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+    integrity="sha256-3edrmyuQ0w65f8gfBsqowzjJe2iM6n0nKciPUp8y+7E="
+    crossorigin="anonymous"></script>
+  <script defer src="js/raphael.min.js"></script>
   <script defer src="js/sylvester.js"></script>
   <script defer src="js/kinematics.js"></script>
 </body>
